@@ -1,4 +1,4 @@
-cat > /home/claude/csrf-project/poc/README.md << 'EOF'
+
 # CSRF Attack Proof of Concept
 
 A comprehensive demonstration of Cross-Site Request Forgery (CSRF) attacks and defenses for educational purposes.
