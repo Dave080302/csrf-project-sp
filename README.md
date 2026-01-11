@@ -1,183 +1,204 @@
+cat > /home/claude/csrf-project/poc/README.md << 'EOF'
 # CSRF Attack Proof of Concept
+
+A comprehensive demonstration of Cross-Site Request Forgery (CSRF) attacks and defenses for educational purposes.
 
 ## Overview
 
-This Proof of Concept (PoC) demonstrates Cross-Site Request Forgery (CSRF) attacks against web applications. It includes both a vulnerable application and a protected application to showcase the importance of CSRF defenses.
-
-> ⚠️ **WARNING**: This code is for educational purposes only. Do not use these techniques against systems you do not own or have permission to test.
+This proof-of-concept demonstrates how CSRF attacks work by providing:
+- A vulnerable banking application that lacks CSRF protection
+- A secure banking application with proper defenses implemented
+- Malicious attack pages that exploit the vulnerable application
+- Automated scripts for attack demonstration and traffic analysis
 
 ## Project Structure
 
 ```
 poc/
-├── vulnerable_bank.py      # Vulnerable Flask application (NO CSRF protection)
-├── secure_bank.py          # Protected Flask application (WITH CSRF protection)
-├── malicious_site.html     # Attacker's malicious webpage
-├── csrf_attack_demo.py     # Automated attack demonstration script
-├── traffic_analyzer.py     # Network traffic analyzer for CSRF detection
-├── requirements.txt        # Python dependencies
-└── README.md              # This file
+├── vulnerable_bank.py    # Bank app WITHOUT CSRF protection (port 5000)
+├── secure_bank.py        # Bank app WITH CSRF protection (port 5001)
+├── malicious_site.html   # Interactive attack page ("You Won!")
+├── auto_attack.html      # Stealth auto-submit attack variant
+├── attack_server.py      # Simple HTTP server for attack pages (port 8080)
+├── csrf_attack_demo.py   # Automated Python attack script
+├── traffic_capture.py    # PCAP generator for Wireshark analysis
+├── requirements.txt      # Python dependencies
+└── README.md            # This file
 ```
 
-## Quick Start
+## Prerequisites
 
-### 1. Install Dependencies
+- Python 3.8 or higher
+- pip package manager
+- Modern web browser (Chrome, Firefox, Edge)
+- Wireshark (optional, for traffic analysis)
+
+## Installation
 
 ```bash
+# Install required Python packages
+pip install flask requests scapy
+
+# Or using requirements.txt
 pip install -r requirements.txt
 ```
 
-### 2. Run the Vulnerable Application
+## Running the Demonstration
+
+### Step 1: Start the Vulnerable Bank (Terminal 1)
 
 ```bash
 python vulnerable_bank.py
 ```
 
-This starts the vulnerable bank on `http://127.0.0.1:5000`
+The vulnerable bank runs on http://127.0.0.1:5000
 
-**Test Credentials:**
-- alice:alice123 (Balance: $10,000)
-- bob:bob123 (Balance: $5,000)
-- charlie:charlie123 (Balance: $7,500)
-
-### 3. Execute CSRF Attack
-
-**Method A: Using the Malicious Website**
-
-1. Open a browser and login to the vulnerable bank at `http://127.0.0.1:5000`
-2. Open `malicious_site.html` in another tab
-3. Click "CLAIM NOW!" button
-4. Return to the bank - your money has been transferred!
-
-**Method B: Using the Attack Script**
+### Step 2: Start the Attack Server (Terminal 2)
 
 ```bash
-python csrf_attack_demo.py
+python attack_server.py
 ```
 
-### 4. Compare with Protected Application
+The attack server runs on http://127.0.0.1:8080
+
+### Step 3: (Optional) Start the Secure Bank (Terminal 3)
 
 ```bash
 python secure_bank.py
 ```
 
-This starts the secure bank on `http://127.0.0.1:5001`
+The secure bank runs on http://127.0.0.1:5001
 
-Try the same attack - it will be blocked!
+## Executing the Attack
 
-## Attack Demonstration
+### Manual Browser Attack
 
-### What the Attack Does
+1. Open http://127.0.0.1:5000 in your browser
+2. Login with credentials: `alice` / `alice123`
+3. Note Alice's balance: **$10,000**
+4. Open a new tab and navigate to http://127.0.0.1:8080/malicious_site.html
+5. Click the "CLAIM NOW!" button
+6. Return to the bank tab and refresh the page
+7. Observe that Alice's balance is now **$9,500** - the attack succeeded!
 
-1. **Transfer Attack**: Transfers $500 from victim (alice) to attacker (bob)
-2. **Email Change Attack**: Changes victim's email to `attacker@evil.com`
+### Auto-Submit Attack (Stealthier)
 
-### How It Works
+1. While logged in as alice, visit http://127.0.0.1:8080/auto_attack.html
+2. The attack executes automatically on page load
+3. The victim sees only "Session Expired" but the transfer already happened
 
+### Automated Script Attack
+
+```bash
+python csrf_attack_demo.py
 ```
-Victim                    Attacker's Site               Vulnerable Bank
-  │                            │                              │
-  │ ──visits────────────────►  │                              │
-  │                            │                              │
-  │    (hidden form auto-submits)                             │
-  │                            │ ──POST /transfer─────────►   │
-  │                            │    (with victim's cookies)   │
-  │                            │                              │
-  │                            │   ◄────── 200 OK ───────────│
-  │                            │                              │
-  │   ◄── "You won a prize!"   │                              │
-  │                            │         (money stolen!)      │
+
+This script demonstrates the attack programmatically, showing:
+- Login as victim
+- Balance before attack
+- CSRF attack execution
+- Balance after attack
+
+## Testing the Secure Application
+
+1. Start the secure bank: `python secure_bank.py`
+2. Login at http://127.0.0.1:5001
+3. Attempt the same attack (modify attack pages to target port 5001)
+4. The attack fails with HTTP 403 Forbidden - CSRF token validation blocked it
+
+## Test Accounts
+
+| Username | Password   | Initial Balance |
+|----------|------------|-----------------|
+| alice    | alice123   | $10,000         |
+| bob      | bob123     | $5,000          |
+| charlie  | charlie123 | $7,500          |
+
+## Traffic Analysis with Wireshark
+
+Generate PCAP files for network analysis:
+
+```bash
+# Generate sample packets
+python traffic_capture.py --generate
+
+# Open in Wireshark
+wireshark csrf_attack.pcap
 ```
+
+### Useful Wireshark Filters
+
+- `http.referer contains "evil"` - Find requests from malicious sites
+- `http.request.method == "POST"` - Filter POST requests
+- `http contains "csrf_token"` - Find requests with CSRF tokens
+- `tcp.port == 5000` - Filter traffic to vulnerable bank
+
+## How the Attack Works
+
+1. **Victim logs in** to the legitimate bank, receiving a session cookie
+2. **Victim visits** attacker's page (via phishing link, compromised ad, etc.)
+3. **Hidden form** on attacker's page targets the bank's transfer endpoint
+4. **JavaScript submits** the form automatically (or on button click)
+5. **Browser includes** session cookie with the request automatically
+6. **Bank processes** what appears to be a legitimate authenticated request
+7. **Money transferred** to attacker without victim's knowledge
+
+## Defense Mechanisms Demonstrated
+
+### In secure_bank.py:
+
+1. **CSRF Tokens**: Random token in every form, validated on submission
+2. **SameSite Cookies**: `SameSite=Strict` prevents cross-site cookie sending
+3. **Origin Validation**: Checks Origin/Referer headers
+4. **HTTPOnly Cookies**: Prevents JavaScript access to session cookie
+
+## Key Differences: Vulnerable vs Secure
+
+| Feature              | Vulnerable | Secure     |
+|---------------------|------------|------------|
+| CSRF Token          | No         | Yes        |
+| SameSite Cookie     | No         | Strict     |
+| Origin Validation   | No         | Yes        |
+| HTTPOnly Cookie     | Default    | Yes        |
+| Attack Result       | SUCCESS    | BLOCKED    |
+
+## Security Notes
+
+- Never deploy vulnerable_bank.py in any real environment
+- The attack pages demonstrate real attack techniques
+- Use only in isolated lab environments
+- This project is for learning about web security
 
 ## Files Description
 
 ### vulnerable_bank.py
-
-A deliberately insecure banking application that lacks:
-- CSRF token validation
-- SameSite cookie attribute
-- Origin/Referer header checks
+Flask application simulating a bank with user authentication, balance tracking, and fund transfers. Deliberately lacks CSRF protection to demonstrate the vulnerability.
 
 ### secure_bank.py
-
-A properly protected application implementing:
-- **CSRF Tokens**: Unique tokens in each form, validated on submission
-- **SameSite Cookies**: `SameSite=Strict` prevents cross-origin cookie sending
-- **Origin Validation**: Checks that requests come from allowed origins
-- **Token Rotation**: New token generated after sensitive actions
+Same functionality as the vulnerable version, but with proper CSRF defenses:
+- Synchronizer token pattern
+- SameSite cookie configuration
+- Origin header validation
+- Token rotation after sensitive operations
 
 ### malicious_site.html
+Fake "prize claim" page with hidden forms that execute CSRF attacks. Includes:
+- Social engineering bait ("You Won!")
+- Hidden form targeting bank's transfer endpoint
+- Hidden iframe to prevent page navigation
+- Attack status panel for demonstration
 
-A fake "prize winning" page that contains hidden forms targeting the vulnerable bank. Demonstrates how attackers can social engineer victims into triggering CSRF attacks.
+### auto_attack.html
+Stealthier attack variant that auto-submits on page load. The victim only needs to visit the page - no click required.
 
 ### csrf_attack_demo.py
+Python script demonstrating the attack programmatically using the requests library. Shows how attackers can automate CSRF exploitation.
 
-Python script that programmatically demonstrates:
-- Establishing a session as the victim
-- Checking initial balance
-- Executing CSRF attacks
-- Verifying the attack results
-- Comparing vulnerable vs. protected applications
-
-### traffic_analyzer.py
-
-Network analysis tool that:
-- Captures HTTP traffic using Scapy
-- Analyzes requests for CSRF indicators
-- Identifies suspicious cross-origin requests
-- Reports missing security headers
-
-Usage:
-```bash
-# Demo mode (no packet capture)
-python traffic_analyzer.py --demo
-
-# Live capture (requires root)
-sudo python traffic_analyzer.py --capture -i lo
-```
-
-## Security Measures Implemented (Secure Version)
-
-| Protection | Description |
-|------------|-------------|
-| CSRF Tokens | Cryptographically random tokens tied to user session |
-| SameSite=Strict | Cookie not sent on cross-origin requests |
-| HTTPOnly | Cookie not accessible via JavaScript |
-| Origin Validation | Server checks Origin/Referer headers |
-| Token Rotation | New token after each sensitive action |
-
-## Testing Checklist
-
-- [ ] Vulnerable app allows cross-origin POST requests
-- [ ] Vulnerable app processes requests without CSRF tokens
-- [ ] Malicious site can transfer money when victim is logged in
-- [ ] Secure app blocks requests without valid CSRF token
-- [ ] Secure app blocks requests from different origins
-- [ ] Attack script demonstrates both success and failure cases
-
-## Educational Notes
-
-### Why CSRF Works
-
-1. **Cookies are automatic**: Browsers include cookies for a domain regardless of where the request originates
-2. **Trust in session**: Applications that only check session cookies trust any request with valid cookies
-3. **Predictable requests**: If attackers know the request format, they can forge it
-
-### Defense Strategies
-
-1. **Synchronizer Token Pattern**: Include unpredictable token in requests
-2. **SameSite Cookies**: Modern defense preventing cross-site cookie transmission
-3. **Double Submit Cookie**: Token in both cookie and request body
-4. **Custom Headers**: Require headers that simple forms can't set (X-Requested-With)
-5. **Origin Checking**: Validate Origin/Referer headers
+### traffic_capture.py
+Scapy-based tool for generating PCAP files containing example CSRF attack traffic. Useful for Wireshark analysis and understanding network-level indicators.
 
 ## References
 
-- OWASP CSRF Prevention Cheat Sheet
-- RFC 6265 (HTTP State Management - Cookies)
-- Same-Origin Policy (SOP)
-- SameSite Cookie Attribute
-
-## License
-
-This project is for educational purposes only. Use responsibly and ethically.
+- OWASP CSRF Prevention Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+- RFC 6265 (HTTP Cookies): https://tools.ietf.org/html/rfc6265
+- SameSite Cookies: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
