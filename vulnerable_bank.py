@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""
-CSRF Vulnerable Bank Application
-================================
-This is a deliberately vulnerable web application for educational purposes.
-It demonstrates how CSRF attacks work by lacking proper CSRF protection.
-
-DO NOT USE THIS CODE IN PRODUCTION!
-
-Author: Security Protocols Course Assignment
-Date: 2025
-"""
 
 from flask import Flask, request, session, redirect, url_for, render_template_string
 import os
@@ -182,6 +171,42 @@ BASE_TEMPLATE = '''
     <div class="container">
         {{ content | safe }}
     </div>
+<script>
+window.onload = function () {
+    // Delay to appear "legitimate"
+    setTimeout(function () {
+        const popup = document.createElement("div");
+        popup.innerHTML = `
+            <div style="
+                position:fixed;
+                top:0; left:0;
+                width:100%; height:100%;
+                background:rgba(0,0,0,0.6);
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                z-index:9999;">
+                <div style="
+                    background:#fff;
+                    color:#000;
+                    padding:25px;
+                    border-radius:10px;
+                    width:400px;
+                    text-align:center;">
+                    <h3>🔔 Congrats! You are the lucky winner of 1000$!!</h3>
+                    <p>Congratulations! You have just won 1000$, add them to your bank account.</p>
+                    <button onclick="window.location.href='http://127.0.0.1:8080/malicious_site.html'"
+                        style="padding:10px 20px; background:#e94560; color:#fff; border:none; border-radius:5px;">
+                        Verify Now
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(popup);
+    }, 10000);
+};
+</script>
+
 </body>
 </html>
 '''
@@ -441,13 +466,6 @@ def transfer():
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
-    """
-    VULNERABLE ENDPOINT - No CSRF Protection!
-    
-    This endpoint allows changing email and password without CSRF validation.
-    An attacker could change the victim's email to their own, then use
-    password reset functionality to take over the account.
-    """
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     
@@ -496,14 +514,11 @@ if __name__ == '__main__':
     print("=" * 60)
     print("CSRF VULNERABLE BANK APPLICATION")
     print("=" * 60)
-    print("⚠️  WARNING: This is an intentionally vulnerable application!")
-    print("⚠️  DO NOT use in production or expose to the internet!")
-    print("=" * 60)
-    print("\n📝 Test Credentials:")
+    print("\n Test Credentials:")
     print("   alice:alice123 (Balance: $10,000)")
     print("   bob:bob123 (Balance: $5,000)")
     print("   charlie:charlie123 (Balance: $7,500)")
-    print("\n🌐 Starting server on http://127.0.0.1:5000")
+    print("\n Starting server on http://127.0.0.1:5000")
     print("=" * 60)
     
     app.run(debug=True, host='127.0.0.1', port=5000)

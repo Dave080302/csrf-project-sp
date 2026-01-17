@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""
-CSRF Attack Demonstration Script
-=================================
-This script demonstrates how CSRF attacks work programmatically.
-It shows the difference between attacking vulnerable and protected applications.
-
-FOR EDUCATIONAL PURPOSES ONLY!
-
-Author: Security Protocols Course Assignment
-Date: 2025
-"""
-
 import requests
 import sys
 from urllib.parse import urljoin

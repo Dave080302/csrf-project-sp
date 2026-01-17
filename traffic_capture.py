@@ -1,26 +1,4 @@
 #!/usr/bin/env python3
-"""
-CSRF Traffic Capture & PCAP Generator
-======================================
-This tool captures HTTP traffic and generates PCAP files that can be
-analyzed in Wireshark.
-
-Features:
-1. Generate sample PCAP files showing CSRF attacks
-2. Capture live traffic (requires admin/root)
-3. Analyze existing PCAP files for CSRF indicators
-
-Requirements:
-    pip install scapy
-
-Usage:
-    python traffic_capture.py --generate          # Generate sample PCAP files
-    python traffic_capture.py --analyze file.pcap # Analyze existing PCAP
-    sudo python traffic_capture.py --capture      # Live capture (requires root)
-
-FOR EDUCATIONAL PURPOSES ONLY!
-"""
-
 import argparse
 import os
 import sys
@@ -41,7 +19,6 @@ except ImportError:
 
 
 class CSRFPacketGenerator:
-    """Generates sample PCAP files demonstrating CSRF attacks."""
     
     def __init__(self):
         self.src_ip = "192.168.1.100"  # Victim's IP

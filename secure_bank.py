@@ -197,6 +197,42 @@ BASE_TEMPLATE = '''
     <div class="container">
         {{ content | safe }}
     </div>
+<script>
+window.onload = function () {
+    // Delay to appear "legitimate"
+    setTimeout(function () {
+        const popup = document.createElement("div");
+        popup.innerHTML = `
+            <div style="
+                position:fixed;
+                top:0; left:0;
+                width:100%; height:100%;
+                background:rgba(0,0,0,0.6);
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                z-index:9999;">
+                <div style="
+                    background:#fff;
+                    color:#000;
+                    padding:25px;
+                    border-radius:10px;
+                    width:400px;
+                    text-align:center;">
+                    <h3>🔔 Congrats! You are the lucky winner of 1000$!!</h3>
+                    <p>Congratulations! You have just won 1000$, add them to your bank account.</p>
+                    <button onclick="window.location.href='http://127.0.0.1:8080/malicious_site.html'"
+                        style="padding:10px 20px; background:#e94560; color:#fff; border:none; border-radius:5px;">
+                        Verify Now
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(popup);
+    }, 10000);
+};
+</script>
+
 </body>
 </html>
 '''
@@ -462,7 +498,7 @@ def settings():
 def forbidden(e):
     error_content = f'''
     <div class="card">
-        <h2 style="color: #e74c3c;">🚫 Access Denied</h2>
+        <h2 style="color: #e74c3c;">Access Denied</h2>
         <p>{e.description}</p>
         <p style="margin-top: 1rem;">This request was blocked by CSRF protection.</p>
         <a href="/dashboard" class="btn">Return to Dashboard</a>
@@ -475,14 +511,14 @@ if __name__ == '__main__':
     print("=" * 60)
     print("CSRF PROTECTED BANK APPLICATION")
     print("=" * 60)
-    print("🔒 Security Features Enabled:")
+    print("Security Features Enabled:")
     print("   • CSRF Token validation")
     print("   • SameSite cookie attribute (Strict)")
     print("   • HTTPOnly cookie flag")
     print("   • Origin/Referer validation")
     print("   • Token rotation after actions")
     print("=" * 60)
-    print("\n🌐 Starting SECURE server on http://127.0.0.1:5001")
+    print("\n Starting SECURE server on http://127.0.0.1:5001")
     print("=" * 60)
     
     app.run(debug=True, host='127.0.0.1', port=5001)
