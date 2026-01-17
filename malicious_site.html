@@ -97,19 +97,6 @@
             <button id="claimBtn" class="btn" onclick="executeAttack()">🎁 CLAIM NOW!</button>
         </div>
         
-        <div class="instructions">
-            <h4>📋 Testing Instructions:</h4>
-            <ol>
-                <li>Run: <code>python vulnerable_bank.py</code></li>
-                <li>Open <code>http://127.0.0.1:5000 & http://127.0.0.1:5001</code> and login as <code>alice / alice123</code></li>
-                <li>Note balance: <strong>$10,000</strong></li>
-                <li><strong>Keep that tab open!</strong></li>
-                <li>Come back here and click <strong>"CLAIM NOW!"</strong></li>
-                <li>Refresh the bank tab - balance should be <strong>$9,500</strong></li>
-            </ol>
-            <p style="margin-top:0.5rem; color:#e74c3c;"><strong>Note:</strong> If opening this file directly doesn't work, run <code>python attack_server.py</code> and open <code>http://127.0.0.1:8080/malicious_site.html</code></p>
-        </div>
-        
         <div class="attack-log">
             <h4>🔓 Attack Log</h4>
             <div id="log"></div>
